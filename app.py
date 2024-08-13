@@ -5,9 +5,9 @@ from datetime import datetime
 # Laden der Datenbank (aus Excel-Datei)
 @st.cache_data
 def load_data():
-    export_df = pd.read_excel('path_to_your/gesamtbericht_ch.xlsx', sheet_name='Export')
-    wertebereiche_df = pd.read_excel('path_to_your/gesamtbericht_ch.xlsx', sheet_name='Wertebereiche')
-    plz_df = pd.read_excel('path_to_your/Liste-der-PLZ-in-Excel-Karte-Schweiz-Postleitzahlen.xlsx', sheet_name='Tabelle1')
+    export_df = pd.read_excel('gesamtbericht_ch.xlsx', sheet_name='Export')
+    wertebereiche_df = pd.read_excel('wertebereiche.xlsx', sheet_name='Wertebereiche')
+    plz_df = pd.read_excel('Liste-der-PLZ-in-Excel-Karte-Schweiz-Postleitzahlen.xlsx', sheet_name='Tabelle1')
     return export_df, wertebereiche_df, plz_df
 
 export_df, wertebereiche_df, plz_df = load_data()
