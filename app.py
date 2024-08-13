@@ -24,7 +24,7 @@ def ermittle_kantone(plz_prefix):
     if len(plz_prefix) >= 2:
         plz_prefix = int(plz_prefix)
         gefiltert = plz_df[plz_df['PLZ'].astype(str).str.startswith(str(plz_prefix))]
-        return gefiltert[['PLZ', 'Kanton']].drop_duplicates().values.tolist()
+        return gefiltert[['PLZ', 'Kanton ']].drop_duplicates().values.tolist()
     return []
 
 # Streamlit App
