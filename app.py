@@ -35,17 +35,20 @@ KANTON_KUERZEL = {
 # Laden der Datenbank (aus Excel-Datei)
 @st.cache_data
 def load_data():
-    export_df = pd.read_excel('gesamtbericht_ch.xlsx', sheet_name='Export')
-    wertebereiche_df = pd.read_excel('wertebereiche.xlsx', sheet_name='Wertebereiche')
-    plz_df = pd.read_excel('Liste-der-PLZ-in-Excel-Karte-Schweiz-Postleitzahlen.xlsx', sheet_name='Tabelle1')
-    
-    # Debugging: Zeige die Spaltennamen im DataFrame an
-    st.write("Spaltennamen im Export DataFrame:", export_df.columns.tolist())
-    st.write("Spaltennamen im PLZ DataFrame:", plz_df.columns.tolist())
+    try:
+        export_df = pd.read_excel('gesamtbericht_ch.xlsx', sheet_name='Export')
+        wertebereiche_df = pd.read_excel('wertebereiche.xlsx', sheet_name='Wertebereiche')
+        plz_df = pd.read_excel('Liste-der-PLZ-in-Excel-Karte-Schweiz-Postleitzahlen.xlsx', sheet_name='Tabelle1')
+    except Exception as e:
+        st.error(f"Fehler beim Laden der Dateien: {e}")
+        return None, None, None
     
     return export_df, wertebereiche_df, plz_df
 
 export_df, wertebereiche_df, plz_df = load_data()
+
+if export_df is None or wertebereiche_df is None or plz_df is None:
+    st.stop()
 
 # Helferfunktion zur Altersberechnung
 def berechne_alter(geburtsdatum):
@@ -55,11 +58,13 @@ def berechne_alter(geburtsdatum):
     return alter
 
 # Ermitteln der möglichen Kantone basierend auf den ersten Ziffern der Postleitzahl
-def ermittle_kantone(plz_prefix):
+def ermittle_kanton_kurz(plz_prefix):
     if len(plz_prefix) >= 2:
         plz_prefix = int(plz_prefix)
         gefiltert = plz_df[plz_df['PLZ'].astype(str).str.startswith(str(plz_prefix))]
-        return gefiltert[['PLZ', 'Kanton']].drop_duplicates().values.tolist()
+        gefiltert_kantone = gefiltert[['Kanton']].drop_duplicates()
+        kanton_namen = gefiltert_kantone['Kanton'].values.tolist()
+        return [KANTON_KUERZEL.get(kanton) for kanton in kanton_namen if KANTON_KUERZEL.get(kanton)]
     return []
 
 # Streamlit App
@@ -67,13 +72,13 @@ st.title("Krankenversicherung für Grenzgänger in der Schweiz")
 
 # Benutzereingaben
 geburtsdatum = st.date_input("Geburtsdatum")
-plz_prefix = st.text_input("Erste zwei bis drei Ziffern der Postleitzahl (Schweiz)")
+plz_prefix = st.text_input("Geben Sie die ersten zwei Ziffern der Postleitzahl ein (Schweiz)")
 
-kantone_moeglich = ermittle_kantone(plz_prefix)
-kanton_auswahl = None
+# Dynamische Kantonauswahl basierend auf den ersten Ziffern der PLZ
+kanton_kurz = ermittle_kanton_kurz(plz_prefix)
 
-if kantone_moeglich:
-    kanton_auswahl = st.selectbox("Wählen Sie den Kanton:", options=kantone_moeglich, format_func=lambda x: f"PLZ: {x[0]} - Kanton: {x[1]}")
+if kanton_kurz:
+    kanton_auswahl = st.selectbox("Wählen Sie den Kanton:", options=kanton_kurz)
 else:
     st.write("Bitte geben Sie mindestens zwei Ziffern ein, um Kantone anzuzeigen.")
 
@@ -81,38 +86,32 @@ geschlecht = st.selectbox("Geschlecht", options=["Männlich", "Weiblich"])
 franchise = st.selectbox("Höhe der Franchise", options=["FRA-300", "FRA-500", "FRA-1000", "FRA-1500", "FRA-2000", "FRA-2500"])
 
 # Berechnung ausführen, wenn auf den Button geklickt wird
-if st.button("Versicherung berechnen") and kanton_auswahl:
+if st.button("Versicherung berechnen") and kanton_kurz:
     if geburtsdatum and kanton_auswahl:
         # Alter und Kanton bestimmen
         alter = berechne_alter(str(geburtsdatum))
-        kanton_name = kanton_auswahl[1]
-        
-        # Umwandeln des Kanton-Namens in das Kürzel
-        kanton = KANTON_KUERZEL.get(kanton_name, None)
-        
-        if kanton:
-            # Filterung der Datenbank nach dem Kanton-Kürzel
-            gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
-                                     (export_df['Franchise'] == franchise)]
+        kanton = kanton_auswahl
 
-            # Altersklasse bestimmen
-            if alter <= 18:
-                altersklasse = 'AKL-KIN'
-            elif 19 <= alter <= 25:
-                altersklasse = 'AKL-JUG'
-            else:
-                altersklasse = 'AKL-ERW'
+        # Filterung der Datenbank nach dem Kanton-Kürzel
+        gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
+                                 (export_df['Franchise'] == franchise)]
 
-            gefiltert_df = gefiltert_df[gefiltert_df['Altersklasse'] == altersklasse]
-
-            # Ergebnisse anzeigen
-            if not gefiltert_df.empty:
-                st.subheader("Ihre Versicherungen:")
-                for index, row in gefiltert_df.iterrows():
-                    st.write(f"{row['Tarifbezeichnung']} - {row['Prämie']} CHF")
-            else:
-                st.write("Keine passenden Versicherungen gefunden.")
+        # Altersklasse bestimmen
+        if alter <= 18:
+            altersklasse = 'AKL-KIN'
+        elif 19 <= alter <= 25:
+            altersklasse = 'AKL-JUG'
         else:
-            st.write("Kanton konnte nicht gefunden werden.")
+            altersklasse = 'AKL-ERW'
+
+        gefiltert_df = gefiltert_df[gefiltert_df['Altersklasse'] == altersklasse]
+
+        # Ergebnisse anzeigen
+        if not gefiltert_df.empty:
+            st.subheader("Ihre Versicherungen:")
+            for index, row in gefiltert_df.iterrows():
+                st.write(f"{row['Tarifbezeichnung']} - {row['Prämie']} CHF")
+        else:
+            st.write("Keine passenden Versicherungen gefunden.")
     else:
         st.error("Bitte alle Felder ausfüllen.")
