@@ -57,40 +57,41 @@ def berechne_alter(geburtsdatum):
     alter = heute.year - geburtsdatum.year - ((heute.month, heute.day) < (geburtsdatum.month, geburtsdatum.day))
     return alter
 
-# Ermitteln der möglichen Kantone basierend auf den ersten Ziffern der Postleitzahl
-def ermittle_kanton_kurz(plz_prefix):
+# Ermitteln der möglichen PLZ und Kantone basierend auf den ersten Ziffern der Postleitzahl
+def ermittle_plz_kanton(plz_prefix):
     if len(plz_prefix) >= 2:
-        plz_prefix = int(plz_prefix)
-        gefiltert = plz_df[plz_df['PLZ'].astype(str).str.startswith(str(plz_prefix))]
-        gefiltert_kantone = gefiltert[['Kanton']].drop_duplicates()
-        kanton_namen = gefiltert_kantone['Kanton'].values.tolist()
-        return [KANTON_KUERZEL.get(kanton) for kanton in kanton_namen if KANTON_KUERZEL.get(kanton)]
-    return []
+        plz_prefix = str(plz_prefix)
+        gefiltert = plz_df[plz_df['PLZ'].astype(str).str.startswith(plz_prefix)]
+        gefiltert = gefiltert[['PLZ', 'Kanton']].drop_duplicates()
+        gefiltert['Kanton Kürzel'] = gefiltert['Kanton'].apply(lambda x: KANTON_KUERZEL.get(x, ''))
+        gefiltert['Anzeige'] = gefiltert.apply(lambda x: f"PLZ: {x['PLZ']} - Kanton: {x['Kanton']} ({x['Kanton Kürzel']})", axis=1)
+        return gefiltert
+    return pd.DataFrame()
 
 # Streamlit App
 st.title("Krankenversicherung für Grenzgänger in der Schweiz")
 
-# Benutzereingaben
-geburtsdatum = st.date_input("Geburtsdatum")
+# Konsolidiertes Eingabefeld für PLZ und Kanton
 plz_prefix = st.text_input("Geben Sie die ersten zwei Ziffern der Postleitzahl ein (Schweiz)")
+gefiltert_df = ermittle_plz_kanton(plz_prefix)
 
-# Dynamische Kantonauswahl basierend auf den ersten Ziffern der PLZ
-kanton_kurz = ermittle_kanton_kurz(plz_prefix)
+kanton_auswahl = None
 
-if kanton_kurz:
-    kanton_auswahl = st.selectbox("Wählen Sie den Kanton:", options=kanton_kurz)
+if not gefiltert_df.empty:
+    kanton_auswahl = st.selectbox("Wählen Sie die Postleitzahl und den Kanton:", options=gefiltert_df['Anzeige'].tolist())
 else:
-    st.write("Bitte geben Sie mindestens zwei Ziffern ein, um Kantone anzuzeigen.")
+    st.write("Bitte geben Sie mindestens zwei Ziffern ein, um Optionen anzuzeigen.")
 
 geschlecht = st.selectbox("Geschlecht", options=["Männlich", "Weiblich"])
 franchise = st.selectbox("Höhe der Franchise", options=["FRA-300", "FRA-500", "FRA-1000", "FRA-1500", "FRA-2000", "FRA-2500"])
 
 # Berechnung ausführen, wenn auf den Button geklickt wird
-if st.button("Versicherung berechnen") and kanton_kurz:
+if st.button("Versicherung berechnen") and kanton_auswahl:
     if geburtsdatum and kanton_auswahl:
         # Alter und Kanton bestimmen
         alter = berechne_alter(str(geburtsdatum))
-        kanton = kanton_auswahl
+        ausgewählte_plz = gefiltert_df[gefiltert_df['Anzeige'] == kanton_auswahl].iloc[0]
+        kanton = ausgewählte_plz['Kanton Kürzel']
 
         # Filterung der Datenbank nach dem Kanton-Kürzel
         gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
