@@ -53,7 +53,7 @@ if st.button("Versicherung berechnen") and kanton_auswahl:
         kanton = kanton_auswahl[1]
 
         # Filterung der Datenbank
-        gefiltert_df = export_df[(export_df['Kanton '] == kanton) &
+        gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
                                  (export_df['Franchise'] == franchise)]
 
         # Altersklasse bestimmen
