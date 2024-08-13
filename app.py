@@ -70,7 +70,8 @@ def ermittle_plz_kanton(plz_prefix):
 # Streamlit App
 st.title("Krankenversicherung für Grenzgänger in der Schweiz")
 
-# Konsolidiertes Eingabefeld für PLZ und Kanton
+# Eingabefelder
+geburtsdatum = st.date_input("Geburtsdatum")
 plz_prefix = st.text_input("Geben Sie die ersten zwei Ziffern der Postleitzahl ein (Schweiz)")
 gefiltert_df = ermittle_plz_kanton(plz_prefix)
 
