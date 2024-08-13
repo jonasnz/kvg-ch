@@ -5,17 +5,9 @@ from datetime import datetime
 # Laden der Datenbank (aus Excel-Datei)
 @st.cache_data
 def load_data():
-    # Debugging: Zeige das aktuelle Verzeichnis und die enthaltenen Dateien an
-    st.write("Aktuelles Verzeichnis:", os.getcwd())
-    st.write("Dateien im Verzeichnis:", os.listdir())
-
     export_df = pd.read_excel('gesamtbericht_ch.xlsx', sheet_name='Export')
     wertebereiche_df = pd.read_excel('wertebereiche.xlsx', sheet_name='Wertebereiche')
     plz_df = pd.read_excel('Liste-der-PLZ-in-Excel-Karte-Schweiz-Postleitzahlen.xlsx', sheet_name='Tabelle1')
-    
-    # Debugging: Zeige die Spaltennamen des plz_df an
-    st.write("Spaltennamen im PLZ DataFrame:", plz_df.columns.tolist())
-    
     return export_df, wertebereiche_df, plz_df
 
 export_df, wertebereiche_df, plz_df = load_data()
@@ -32,10 +24,6 @@ def ermittle_kantone(plz_prefix):
     if len(plz_prefix) >= 2:
         plz_prefix = int(plz_prefix)
         gefiltert = plz_df[plz_df['PLZ'].astype(str).str.startswith(str(plz_prefix))]
-        
-        # Debugging: Zeige die ersten Zeilen des gefilterten DataFrames an
-        st.write("Gefilterte Daten:", gefiltert.head())
-        
         return gefiltert[['PLZ', 'Kanton']].drop_duplicates().values.tolist()
     return []
 
