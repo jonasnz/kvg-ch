@@ -96,13 +96,10 @@ if st.button("Versicherung berechnen") and kanton_auswahl:
         # Umwandeln des Kanton-Namens in das Kürzel
         kanton = KANTON_KUERZEL.get(kanton_name, None)
 
-        st.write(f"Debug: Kanton = {kanton}, Alter = {alter}, Franchise = {franchise}")
-
-        # Filterung der Datenbank nach dem Kanton-Kürzel
+        # Filterung der Datenbank nach dem Kanton-Kürzel, Franchise und Unfalleinschluss
         gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
-                                 (export_df['Franchise'] == franchise)]
-
-        st.write(f"Debug: Gefilterte Einträge nach Kanton und Franchise = {gefiltert_df.shape[0]}")
+                                 (export_df['Franchise'] == franchise) &
+                                 (export_df['Unfalleinschluss'] == 'OHN-UNF')]
 
         # Altersklasse bestimmen
         if alter <= 18:
@@ -114,13 +111,11 @@ if st.button("Versicherung berechnen") and kanton_auswahl:
 
         gefiltert_df = gefiltert_df[gefiltert_df['Altersklasse'] == altersklasse]
 
-        st.write(f"Debug: Gefilterte Einträge nach Altersklasse = {gefiltert_df.shape[0]}")
-
         # Ergebnisse anzeigen
         if not gefiltert_df.empty:
             st.subheader("Ihre Versicherungen:")
             for index, row in gefiltert_df.iterrows():
-                st.write(f"{row['Tarifbezeichnung']} - {row['Prämie']} CHF")
+                st.write(f"Versicherer: {row['Versicherer']} - Tarif: {row['Tarifbezeichnung']} - Prämie: {row['Prämie']} CHF")
         else:
             st.write("Keine passenden Versicherungen gefunden.")
     else:
