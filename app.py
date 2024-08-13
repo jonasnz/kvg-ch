@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Kanton-Kürzel-Mapping (falls benötigt)
+# Kanton-Kürzel-Mapping
 KANTON_KUERZEL = {
     "Aargau": "AG",
     "Appenzell Ausserrhoden": "AR",
@@ -91,11 +91,18 @@ if st.button("Versicherung berechnen") and kanton_auswahl:
         # Alter und Kanton bestimmen
         alter = berechne_alter(str(geburtsdatum))
         ausgewählte_plz = gefiltert_df[gefiltert_df['Anzeige'] == kanton_auswahl].iloc[0]
-        kanton = ausgewählte_plz['Kanton']
+        kanton_name = ausgewählte_plz['Kanton']
 
-        # Filterung der Datenbank nach dem Kanton-Namen
+        # Umwandeln des Kanton-Namens in das Kürzel
+        kanton = KANTON_KUERZEL.get(kanton_name, None)
+
+        st.write(f"Debug: Kanton = {kanton}, Alter = {alter}, Franchise = {franchise}")
+
+        # Filterung der Datenbank nach dem Kanton-Kürzel
         gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
                                  (export_df['Franchise'] == franchise)]
+
+        st.write(f"Debug: Gefilterte Einträge nach Kanton und Franchise = {gefiltert_df.shape[0]}")
 
         # Altersklasse bestimmen
         if alter <= 18:
@@ -106,6 +113,8 @@ if st.button("Versicherung berechnen") and kanton_auswahl:
             altersklasse = 'AKL-ERW'
 
         gefiltert_df = gefiltert_df[gefiltert_df['Altersklasse'] == altersklasse]
+
+        st.write(f"Debug: Gefilterte Einträge nach Altersklasse = {gefiltert_df.shape[0]}")
 
         # Ergebnisse anzeigen
         if not gefiltert_df.empty:
