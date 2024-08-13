@@ -24,7 +24,7 @@ def ermittle_kantone(plz_prefix):
     if len(plz_prefix) >= 2:
         plz_prefix = int(plz_prefix)
         gefiltert = plz_df[plz_df['PLZ'].astype(str).str.startswith(str(plz_prefix))]
-        return gefiltert[['PLZ', 'Kanton ']].drop_duplicates().values.tolist()
+        return gefiltert[['PLZ', 'Kanton']].drop_duplicates().values.tolist()
     return []
 
 # Streamlit App
@@ -43,7 +43,7 @@ else:
     st.write("Bitte geben Sie mindestens zwei Ziffern ein, um Kantone anzuzeigen.")
 
 geschlecht = st.selectbox("Geschlecht", options=["Männlich", "Weiblich"])
-franchise = st.selectbox("Höhe der Franchise", options=["FRA-0", "FRA-100", "FRA-200"])
+franchise = st.selectbox("Höhe der Franchise", options=["FRA-300", "FRA-500", "FRA-1000", "FRA-1500", "FRA-2000", "FRA-2500"])
 
 # Berechnung ausführen, wenn auf den Button geklickt wird
 if st.button("Versicherung berechnen") and kanton_auswahl:
@@ -53,7 +53,7 @@ if st.button("Versicherung berechnen") and kanton_auswahl:
         kanton = kanton_auswahl[1]
 
         # Filterung der Datenbank
-        gefiltert_df = export_df[(export_df['Kanton'] == kanton) &
+        gefiltert_df = export_df[(export_df['Kanton '] == kanton) &
                                  (export_df['Franchise'] == franchise)]
 
         # Altersklasse bestimmen
